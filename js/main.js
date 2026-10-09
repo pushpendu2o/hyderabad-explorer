@@ -18,31 +18,41 @@ async function renderProfileTab() {
 
 function openFilterSheet() {
   const filters = getFilters();
+  // Empty placeIds/postTypes means "no filter applied yet" -- show that
+  // visually as every chip selected, since that's the equivalent state.
   document.querySelectorAll('.filter-place-chip').forEach((chip) => {
-    chip.classList.toggle('selected', filters.placeIds.includes(chip.dataset.place));
+    chip.classList.toggle(
+      'selected',
+      filters.placeIds.length === 0 || filters.placeIds.includes(chip.dataset.place)
+    );
   });
   document.querySelectorAll('.filter-type-chip').forEach((chip) => {
-    chip.classList.toggle('selected', filters.postTypes.includes(chip.dataset.type));
+    chip.classList.toggle(
+      'selected',
+      filters.postTypes.length === 0 || filters.postTypes.includes(chip.dataset.type)
+    );
   });
   document.getElementById('filter-distance').value = filters.maxDistanceKm;
   document.getElementById('filter-distance-label').textContent = `${filters.maxDistanceKm} km`;
   document.getElementById('filter-sheet').style.display = 'flex';
 }
 
-function closeFilterSheet() {
-  document.getElementById('filter-sheet').style.display = 'none';
-}
-
 async function applyFilters() {
-  const placeIds = [...document.querySelectorAll('.filter-place-chip.selected')].map(
-    (el) => el.dataset.place
-  );
-  const postTypes = [...document.querySelectorAll('.filter-type-chip.selected')].map(
-    (el) => el.dataset.type
-  );
+  const allPlaceChips = [...document.querySelectorAll('.filter-place-chip')];
+  const selectedPlaceChips = allPlaceChips.filter((el) => el.classList.contains('selected'));
+  const placeIds = selectedPlaceChips.length === allPlaceChips.length
+    ? []
+    : selectedPlaceChips.map((el) => el.dataset.place);
+
+  const allTypeChips = [...document.querySelectorAll('.filter-type-chip')];
+  const selectedTypeChips = allTypeChips.filter((el) => el.classList.contains('selected'));
+  const postTypes = selectedTypeChips.length === allTypeChips.length
+    ? []
+    : selectedTypeChips.map((el) => el.dataset.type);
+
   const maxDistanceKm = Number(document.getElementById('filter-distance').value);
   saveFilters({ placeIds, postTypes, maxDistanceKm });
-  closeFilterSheet();
+  document.getElementById('filter-sheet').style.display = 'none';
   await renderFeed();
 }
 
@@ -66,8 +76,9 @@ async function bootstrap() {
   document.getElementById('composer-close-btn').addEventListener('click', closeComposer);
   document.getElementById('composer-form').addEventListener('submit', submitComposer);
   document.getElementById('open-filter-btn').addEventListener('click', openFilterSheet);
-  document.getElementById('filter-close-btn').addEventListener('click', closeFilterSheet);
-  document.getElementById('filter-apply-btn').addEventListener('click', applyFilters);
+  document.getElementById('filter-sheet').addEventListener('click', (e) => {
+    if (e.target.id === 'filter-sheet') applyFilters();
+  });
   document.getElementById('filter-distance').addEventListener('input', (e) => {
     document.getElementById('filter-distance-label').textContent = `${e.target.value} km`;
   });

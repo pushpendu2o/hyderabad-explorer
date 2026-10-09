@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Hyderabad Locals</title>
-  <link rel="stylesheet" href="css/style.css?v=8" />
+  <link rel="stylesheet" href="css/style.css?v=11" />
 </head>
 <body>
   <div id="app-loading">Loading…</div>
@@ -12,7 +12,7 @@
   <div id="app-shell" class="phone-shell" style="display:none">
     <header class="app-topbar">
       <div class="app-topbar-title-row">
-        <h1>Hyderabad Locals</h1>
+        <h1>Hyderabad<span class="brand-accent">Locals</span></h1>
       </div>
     </header>
 
@@ -108,10 +108,7 @@
   <!-- Filter sheet -->
   <div id="filter-sheet" class="overlay" style="display:none">
     <div class="overlay-card">
-      <div class="overlay-card-header">
-        <h3>Filters</h3>
-        <button id="filter-close-btn" class="close-btn">×</button>
-      </div>
+      <h3>Filters</h3>
       <p class="filter-label">Place</p>
       <div class="chip-row">
         <span class="filter-place-chip" data-place="golconda">Golconda</span>
@@ -128,9 +125,8 @@
         <span class="filter-type-chip" data-type="unexpected">Unexpected</span>
         <span class="filter-type-chip" data-type="unsafe">Unsafe</span>
       </div>
-      <p class="filter-label">Max distance: <span id="filter-distance-label">50 km</span></p>
-      <input id="filter-distance" type="range" min="1" max="100" value="50" />
-      <button id="filter-apply-btn" class="primary-btn">Apply</button>
+      <p class="filter-label">Max distance: <span id="filter-distance-label">100 km</span></p>
+      <input id="filter-distance" type="range" min="1" max="100" value="100" />
     </div>
   </div>
 
@@ -195,14 +191,14 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=8"></script>
-  <script src="js/supabaseClient.js?v=8"></script>
-  <script src="js/auth.js?v=8"></script>
-  <script src="js/store.js?v=8"></script>
-  <script src="js/feed.js?v=8"></script>
-  <script src="js/discover.js?v=8"></script>
-  <script src="js/chat.js?v=8"></script>
-  <script src="js/profile.js?v=8"></script>
-  <script src="js/main.js?v=8"></script>
+  <script src="js/config.js?v=11"></script>
+  <script src="js/supabaseClient.js?v=11"></script>
+  <script src="js/auth.js?v=11"></script>
+  <script src="js/store.js?v=11"></script>
+  <script src="js/feed.js?v=11"></script>
+  <script src="js/discover.js?v=11"></script>
+  <script src="js/chat.js?v=11"></script>
+  <script src="js/profile.js?v=11"></script>
+  <script src="js/main.js?v=11"></script>
 </body>
 </html>

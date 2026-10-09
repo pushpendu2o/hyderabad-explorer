@@ -43,7 +43,7 @@ function distanceToPlace(place) {
 const DEFAULT_FILTERS = {
   placeIds: [],
   postTypes: [],
-  maxDistanceKm: 50,
+  maxDistanceKm: 100,
 };
 
 function getFilters() {
