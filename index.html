@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Hyderabad Locals</title>
-  <link rel="stylesheet" href="css/style.css?v=6" />
+  <link rel="stylesheet" href="css/style.css?v=8" />
 </head>
 <body>
   <div id="app-loading">Loading…</div>
@@ -22,6 +22,7 @@
           <button id="open-filter-btn" class="header-icon-btn">Filters</button>
           <button id="open-composer-btn" class="primary-btn">+ Post</button>
         </div>
+        <div id="feed-filter-banner"></div>
         <div id="feed-list"></div>
       </section>
 
@@ -42,11 +43,8 @@
         <h4 class="chat-section-title">Saved places</h4>
         <div id="profile-saved-list"></div>
 
-        <h4 class="chat-section-title">
-          My itinerary
-          <button id="add-day-btn" class="header-icon-btn small-btn">+ Day</button>
-        </h4>
-        <div id="profile-itinerary"></div>
+        <h4 class="chat-section-title">Saved nearby spots</h4>
+        <div id="profile-saved-nearby-list"></div>
       </section>
     </main>
 
@@ -137,30 +135,46 @@
   </div>
 
   <!-- Place detail (Discover) -->
-  <div id="place-detail-overlay" class="overlay" style="display:none">
-    <div class="overlay-card place-detail-card">
-      <div class="overlay-card-header">
-        <h3 id="place-detail-name"></h3>
-        <div class="place-detail-header-actions">
-          <button id="place-detail-bookmark-btn" class="icon-btn" title="Save place">☆</button>
-          <button id="place-detail-close-btn" class="close-btn">×</button>
-        </div>
-      </div>
+  <div id="place-detail-page" class="full-page" style="display:none">
+    <header class="full-page-header">
+      <button id="place-detail-close-btn" class="back-btn" title="Back">←</button>
+      <h3 id="place-detail-name"></h3>
+      <button id="place-detail-bookmark-btn" class="icon-btn" title="Save place">☆</button>
+    </header>
+    <div class="full-page-body">
       <div id="place-detail-gallery" class="place-detail-gallery"></div>
       <p id="place-detail-about" class="place-detail-about"></p>
-      <p class="filter-label">Facts</p>
-      <ul id="place-detail-facts" class="place-detail-list"></ul>
-      <p class="filter-label">Good to know</p>
-      <ul id="place-detail-tips" class="place-detail-list"></ul>
-      <p class="filter-label">Avoid</p>
-      <ul id="place-detail-avoid" class="place-detail-list"></ul>
-      <p class="filter-label">Nearby</p>
-      <div id="place-detail-nearby" class="place-detail-nearby"></div>
-      <p id="place-detail-post-count" class="place-detail-post-count"></p>
-      <div class="place-detail-actions">
-        <button id="place-detail-add-trip-btn" class="header-icon-btn">+ Add to itinerary</button>
-        <button id="place-detail-seeposts-btn" class="primary-btn">See posts</button>
+
+      <div class="section-block">
+        <button class="section-header" data-target="place-detail-facts-wrap">Facts <span class="chevron">⌄</span></button>
+        <div id="place-detail-facts-wrap" class="section-content" style="display:none">
+          <ul id="place-detail-facts" class="place-detail-list"></ul>
+        </div>
       </div>
+
+      <div class="section-block">
+        <button class="section-header" data-target="place-detail-tips-wrap">Good to know <span class="chevron">⌄</span></button>
+        <div id="place-detail-tips-wrap" class="section-content" style="display:none">
+          <ul id="place-detail-tips" class="place-detail-list"></ul>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <button class="section-header" data-target="place-detail-avoid-wrap">Avoid <span class="chevron">⌄</span></button>
+        <div id="place-detail-avoid-wrap" class="section-content" style="display:none">
+          <ul id="place-detail-avoid" class="place-detail-list"></ul>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <button class="section-header" data-target="place-detail-nearby-wrap">Nearby <span class="chevron">⌄</span></button>
+        <div id="place-detail-nearby-wrap" class="section-content" style="display:none">
+          <div id="place-detail-nearby" class="place-detail-nearby"></div>
+        </div>
+      </div>
+
+      <p id="place-detail-post-count" class="place-detail-post-count"></p>
+      <button id="place-detail-seeposts-btn" class="primary-btn full-width-btn">See posts</button>
     </div>
   </div>
 
@@ -181,14 +195,14 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=6"></script>
-  <script src="js/supabaseClient.js?v=6"></script>
-  <script src="js/auth.js?v=6"></script>
-  <script src="js/store.js?v=6"></script>
-  <script src="js/feed.js?v=6"></script>
-  <script src="js/discover.js?v=6"></script>
-  <script src="js/chat.js?v=6"></script>
-  <script src="js/profile.js?v=6"></script>
-  <script src="js/main.js?v=6"></script>
+  <script src="js/config.js?v=8"></script>
+  <script src="js/supabaseClient.js?v=8"></script>
+  <script src="js/auth.js?v=8"></script>
+  <script src="js/store.js?v=8"></script>
+  <script src="js/feed.js?v=8"></script>
+  <script src="js/discover.js?v=8"></script>
+  <script src="js/chat.js?v=8"></script>
+  <script src="js/profile.js?v=8"></script>
+  <script src="js/main.js?v=8"></script>
 </body>
 </html>

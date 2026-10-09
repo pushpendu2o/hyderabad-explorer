@@ -129,6 +129,7 @@ function openPlaceDetail(placeId) {
   const place = placeById(placeId);
   const info = STATIC_PLACE_INFO[placeId];
   const count = feedPosts.filter((p) => p.place_id === placeId).length;
+  const page = document.getElementById('place-detail-page');
 
   document.getElementById('place-detail-name').textContent = place.name;
   document.getElementById('place-detail-gallery').innerHTML = info.gallery
@@ -146,7 +147,7 @@ function openPlaceDetail(placeId) {
           <strong>${n.title}</strong> <span class="nearby-distance">${n.distance}</span>
           <p>${n.desc}</p>
         </div>
-        <button class="nearby-add-btn" data-id="${n.id}" data-title="${escapeHtml(n.title)}" data-place-id="${placeId}" title="Add to itinerary">+</button>
+        <button class="nearby-star-btn" data-id="${n.id}" data-title="${escapeHtml(n.title)}" data-place-id="${placeId}" title="Save spot">${isNearbySaved(n.id) ? '★' : '☆'}</button>
       </div>`
     )
     .join('');
@@ -160,18 +161,27 @@ function openPlaceDetail(placeId) {
     bookmarkBtn.textContent = saved ? '★' : '☆';
   };
 
-  document.getElementById('place-detail-add-trip-btn').onclick = () => {
-    addToItinerary({ kind: 'place', placeId, title: place.name });
-    alert(`Added ${place.name} to your itinerary — organize it into a day from Profile.`);
-  };
-
-  document.getElementById('place-detail-overlay').querySelectorAll('.nearby-add-btn').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
+  page.querySelectorAll('.nearby-star-btn').forEach((btn) => {
+    btn.onclick = (e) => {
       e.stopPropagation();
-      addToItinerary({ kind: 'nearby', placeId: btn.dataset.placeId, title: btn.dataset.title });
-      btn.textContent = '✓';
-      btn.disabled = true;
-    });
+      const saved = toggleSavedNearby({
+        id: btn.dataset.id,
+        title: btn.dataset.title,
+        placeId: btn.dataset.placeId,
+      });
+      btn.textContent = saved ? '★' : '☆';
+    };
+  });
+
+  page.querySelectorAll('.section-header').forEach((header) => {
+    header.onclick = () => {
+      const content = document.getElementById(header.dataset.target);
+      const isOpen = content.style.display === 'block';
+      content.style.display = isOpen ? 'none' : 'block';
+      header.classList.toggle('open', !isOpen);
+    };
+    header.classList.remove('open');
+    document.getElementById(header.dataset.target).style.display = 'none';
   });
 
   document.getElementById('place-detail-seeposts-btn').onclick = () => {
@@ -181,9 +191,9 @@ function openPlaceDetail(placeId) {
     renderFeed();
   };
 
-  document.getElementById('place-detail-overlay').style.display = 'flex';
+  page.style.display = 'flex';
 }
 
 function closePlaceDetail() {
-  document.getElementById('place-detail-overlay').style.display = 'none';
+  document.getElementById('place-detail-page').style.display = 'none';
 }

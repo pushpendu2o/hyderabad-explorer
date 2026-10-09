@@ -1,7 +1,9 @@
 // Anonymous-only auth: every visitor gets a real Supabase auth session
 // (so RLS/auth.uid() works) without ever typing an email or password.
-// First visit asks for just a display name, then it's remembered by
-// Supabase's own session persistence (localStorage under the hood).
+// Signing in happens silently on load -- browsing, Discover, and saving
+// places need no identity at all. The display-name prompt only fires the
+// first time someone actually does something that needs an author: post,
+// comment, message, or open their Profile tab.
 
 let currentUser = null;
 let currentProfile = null;
@@ -15,30 +17,36 @@ async function ensureSession() {
     if (error) throw error;
     currentUser = data.user;
   }
-  await ensureProfile();
+  await loadProfileIfExists();
 }
 
-async function ensureProfile() {
-  const { data: existing, error } = await sb
+async function loadProfileIfExists() {
+  const { data } = await sb
     .from('profiles')
     .select('*')
     .eq('id', currentUser.id)
     .maybeSingle();
-  if (error) throw error;
+  currentProfile = data || null;
+}
 
-  if (existing) {
-    currentProfile = existing;
-    return;
-  }
+// Call this at the start of any action that needs an author (posting,
+// commenting, messaging, viewing Profile). No-ops if already set up.
+async function ensureProfileForInteraction() {
+  if (currentProfile) return currentProfile;
 
   const name = await promptDisplayName();
-  const { data: created, error: insertError } = await sb
+  const { data: created, error } = await sb
     .from('profiles')
     .insert({ id: currentUser.id, display_name: name })
     .select()
     .single();
-  if (insertError) throw insertError;
+  if (error) throw error;
   currentProfile = created;
+
+  if (myLat !== null && myLng !== null) {
+    await updateMyLocation(myLat, myLng);
+  }
+  return currentProfile;
 }
 
 function promptDisplayName() {
@@ -47,6 +55,8 @@ function promptDisplayName() {
     const input = document.getElementById('name-prompt-input');
     const btn = document.getElementById('name-prompt-submit');
     overlay.style.display = 'flex';
+    input.value = '';
+    input.focus();
 
     function submit() {
       const value = input.value.trim();

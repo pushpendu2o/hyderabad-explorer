@@ -99,55 +99,25 @@ function toggleSavedPlace(placeId) {
   return next.includes(placeId);
 }
 
-const DEFAULT_ITINERARY = { nextDayNum: 1, days: [], unscheduled: [] };
+// Saved nearby spots (starred from a place's detail page) -- same idea as
+// saved places, just a separate bucket since they're not full places.
 
-function getItinerary() {
+function getSavedNearby() {
   try {
-    const raw = localStorage.getItem('hl_itinerary');
-    if (!raw) return { ...DEFAULT_ITINERARY, days: [], unscheduled: [] };
-    return JSON.parse(raw);
+    return JSON.parse(localStorage.getItem('hl_saved_nearby') || '[]');
   } catch {
-    return { ...DEFAULT_ITINERARY, days: [], unscheduled: [] };
+    return [];
   }
 }
 
-function saveItinerary(it) {
-  localStorage.setItem('hl_itinerary', JSON.stringify(it));
+function isNearbySaved(id) {
+  return getSavedNearby().some((item) => item.id === id);
 }
 
-function addToItinerary(item) {
-  const it = getItinerary();
-  it.unscheduled.push({ ...item, addedAt: Date.now() });
-  saveItinerary(it);
-  return it;
-}
-
-function addItineraryDay() {
-  const it = getItinerary();
-  const dayNum = it.nextDayNum;
-  it.days.push({ id: dayNum, items: [] });
-  it.nextDayNum = dayNum + 1;
-  saveItinerary(it);
-  return it;
-}
-
-function moveUnscheduledToDay(itemIndex, dayId) {
-  const it = getItinerary();
-  const [item] = it.unscheduled.splice(itemIndex, 1);
-  const day = it.days.find((d) => d.id === dayId);
-  if (day && item) day.items.push(item);
-  saveItinerary(it);
-  return it;
-}
-
-function removeItineraryItem(bucket, dayId, itemIndex) {
-  const it = getItinerary();
-  if (bucket === 'unscheduled') {
-    it.unscheduled.splice(itemIndex, 1);
-  } else {
-    const day = it.days.find((d) => d.id === dayId);
-    if (day) day.items.splice(itemIndex, 1);
-  }
-  saveItinerary(it);
-  return it;
+function toggleSavedNearby(item) {
+  const saved = getSavedNearby();
+  const exists = saved.some((s) => s.id === item.id);
+  const next = exists ? saved.filter((s) => s.id !== item.id) : [...saved, item];
+  localStorage.setItem('hl_saved_nearby', JSON.stringify(next));
+  return !exists;
 }

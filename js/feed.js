@@ -82,8 +82,24 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function renderFilterBanner(filters) {
+  const banner = document.getElementById('feed-filter-banner');
+  if (!filters.placeIds.length) {
+    banner.style.display = 'none';
+    return;
+  }
+  const names = filters.placeIds.map((id) => placeById(id)?.name || id).join(', ');
+  banner.innerHTML = `<span>Filtered by: <strong>${escapeHtml(names)}</strong></span><button id="clear-place-filter-btn" title="Clear filter">✕</button>`;
+  banner.style.display = 'flex';
+  document.getElementById('clear-place-filter-btn').addEventListener('click', async () => {
+    saveFilters({ ...getFilters(), placeIds: [] });
+    await renderFeed();
+  });
+}
+
 async function renderFeed() {
   const filters = getFilters();
+  renderFilterBanner(filters);
   const container = document.getElementById('feed-list');
   const visible = feedPosts.filter((p) => postMatchesFilters(p, filters));
   if (!visible.length) {
@@ -164,6 +180,7 @@ async function renderCommentsBox(postId) {
     const input = e.target.querySelector('input');
     const body = input.value.trim();
     if (!body) return;
+    await ensureProfileForInteraction();
     const { error } = await sb
       .from('comments')
       .insert({ post_id: postId, author_id: currentUser.id, body });
@@ -174,7 +191,8 @@ async function renderCommentsBox(postId) {
   });
 }
 
-function openComposer() {
+async function openComposer() {
+  await ensureProfileForInteraction();
   document.getElementById('composer-overlay').style.display = 'flex';
 }
 
@@ -191,6 +209,8 @@ async function submitComposer(e) {
   const title = form.title.value.trim();
   const body = form.body.value.trim();
   if (!place_id || !post_type || !title || !body) return;
+
+  await ensureProfileForInteraction();
 
   const { error } = await sb.from('posts').insert({
     author_id: currentUser.id,
