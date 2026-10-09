@@ -33,7 +33,7 @@ html, body { margin: 0; overflow: hidden; height: 100%; font-family: -apple-syst
 
 .bottom-tabs {
   display: flex; border-top: 1px solid #eee; background: #fff;
-  height: 80px; padding-bottom: env(safe-area-inset-bottom, 0);
+  height: 60px; padding-bottom: env(safe-area-inset-bottom, 0);
 }
 .tab-btn {
   flex: 1; display: flex; align-items: center; justify-content: center;
