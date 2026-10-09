@@ -4,12 +4,15 @@ function switchTab(tab) {
   document.getElementById(`tab-${tab}`).style.display = 'block';
   document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
   if (tab === 'chat') renderChatTab();
+  if (tab === 'discover') refreshDiscover();
+  if (tab === 'profile') renderProfileExtras();
 }
 
 function renderProfileTab() {
   document.getElementById('profile-name').textContent = currentProfile.display_name;
   document.getElementById('profile-location').textContent =
     myLat !== null ? 'Location shared' : 'Location not shared';
+  renderProfileExtras();
 }
 
 function openFilterSheet() {
@@ -72,6 +75,11 @@ async function bootstrap() {
     chip.addEventListener('click', () => chip.classList.toggle('selected'))
   );
   document.getElementById('thread-close-btn').addEventListener('click', closeThread);
+  document.getElementById('place-detail-close-btn').addEventListener('click', closePlaceDetail);
+  document.getElementById('add-day-btn').addEventListener('click', () => {
+    addItineraryDay();
+    renderItinerary();
+  });
 }
 
 bootstrap().catch((err) => {

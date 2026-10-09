@@ -8,7 +8,7 @@ let expandedPostId = null;
 async function loadFeed() {
   const { data, error } = await sb
     .from('posts')
-    .select('*, profiles!posts_author_id_fkey(display_name)')
+    .select('*, profiles!posts_author_id_fkey(display_name), comments(count)')
     .order('created_at', { ascending: false });
   if (error) {
     console.error(error);
@@ -40,10 +40,14 @@ function timeAgo(iso) {
   return `${Math.round(hrs / 24)}d ago`;
 }
 
+const ICON_COMMENT = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>';
+const ICON_MESSAGE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+
 function postCardHtml(post) {
   const place = placeById(post.place_id);
   const authorName = post.profiles?.display_name || 'Someone';
   const isMine = post.author_id === currentUser?.id;
+  const commentCount = post.comments?.[0]?.count || 0;
   return `
     <div class="feed-card" data-post-id="${post.id}">
       <div class="feed-card-top">
@@ -51,17 +55,25 @@ function postCardHtml(post) {
         <span class="feed-type-tag feed-type-${post.post_type}">${POST_TYPE_LABELS[post.post_type]}</span>
       </div>
       <h3 class="feed-card-title">${escapeHtml(post.title)}</h3>
-      <p class="feed-card-body">${escapeHtml(post.body)}</p>
+      <p class="feed-card-body clamped" data-post-id="${post.id}">${escapeHtml(post.body)}</p>
+      <button class="show-more-btn" data-post-id="${post.id}" style="display:none">Show more</button>
       <div class="feed-card-meta">
         <span>${escapeHtml(authorName)} · ${timeAgo(post.created_at)}</span>
         <div class="feed-card-actions">
-          <button class="feed-comment-btn" data-post-id="${post.id}">Comments</button>
-          ${!isMine ? `<button class="feed-dm-btn" data-author-id="${post.author_id}" data-author-name="${escapeHtml(authorName)}">Message</button>` : ''}
+          <button class="feed-comment-btn icon-btn" data-post-id="${post.id}" title="Comments">${ICON_COMMENT}<span class="comment-count">${commentCount > 0 ? commentCount : ''}</span></button>
+          ${!isMine ? `<button class="feed-dm-btn icon-btn" data-author-id="${post.author_id}" data-author-name="${escapeHtml(authorName)}" title="Message">${ICON_MESSAGE}</button>` : ''}
         </div>
       </div>
       <div class="feed-comments" id="comments-${post.id}" style="display:none"></div>
     </div>
   `;
+}
+
+function setCommentCount(postId, count) {
+  const post = feedPosts.find((p) => p.id === postId);
+  if (post) post.comments = [{ count }];
+  const btn = document.querySelector(`.feed-comment-btn[data-post-id="${postId}"] .comment-count`);
+  if (btn) btn.textContent = count > 0 ? count : '';
 }
 
 function escapeHtml(str) {
@@ -88,6 +100,20 @@ async function renderFeed() {
       startMessageRequest(btn.dataset.authorId, btn.dataset.authorName)
     );
   });
+
+  container.querySelectorAll('.clamped').forEach((el) => {
+    if (el.scrollHeight > el.clientHeight + 2) {
+      const btn = container.querySelector(`.show-more-btn[data-post-id="${el.dataset.postId}"]`);
+      if (btn) btn.style.display = 'block';
+    }
+  });
+  container.querySelectorAll('.show-more-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const body = container.querySelector(`.clamped[data-post-id="${btn.dataset.postId}"]`);
+      body.classList.remove('clamped');
+      btn.style.display = 'none';
+    });
+  });
 }
 
 async function toggleComments(postId) {
@@ -96,9 +122,15 @@ async function toggleComments(postId) {
     box.style.display = 'none';
     return;
   }
-  box.innerHTML = '<p class="loading">Loading…</p>';
   box.style.display = 'block';
+  await renderCommentsBox(postId);
+}
+
+async function renderCommentsBox(postId) {
+  const box = document.getElementById(`comments-${postId}`);
+  box.innerHTML = '<p class="loading">Loading…</p>';
   const comments = await loadCommentsForPost(postId);
+  setCommentCount(postId, comments.length);
   box.innerHTML = `
     <div class="comment-list">
       ${comments
@@ -107,15 +139,26 @@ async function toggleComments(postId) {
         <div class="comment-row">
           <strong>${escapeHtml(c.profiles?.display_name || 'Someone')}</strong>
           <span>${escapeHtml(c.body)}</span>
+          ${c.author_id === currentUser.id ? `<button class="comment-delete-btn" data-comment-id="${c.id}" data-post-id="${postId}" title="Delete">🗑</button>` : ''}
         </div>`
         )
         .join('') || '<p class="empty-state">No comments yet. Be the first.</p>'}
     </div>
     <form class="comment-form" data-post-id="${postId}">
       <input type="text" placeholder="Add a comment…" required maxlength="500" />
-      <button type="submit">Send</button>
+      <button type="submit" title="Send">➤</button>
     </form>
   `;
+  box.querySelectorAll('.comment-delete-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const { error } = await sb.from('comments').delete().eq('id', btn.dataset.commentId);
+      if (error) {
+        alert('Could not delete: ' + error.message);
+        return;
+      }
+      await renderCommentsBox(btn.dataset.postId);
+    });
+  });
   box.querySelector('.comment-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const input = e.target.querySelector('input');
@@ -126,8 +169,7 @@ async function toggleComments(postId) {
       .insert({ post_id: postId, author_id: currentUser.id, body });
     if (!error) {
       input.value = '';
-      toggleComments(postId); // close
-      toggleComments(postId); // reopen, refreshed
+      await renderCommentsBox(postId);
     }
   });
 }
@@ -164,4 +206,5 @@ async function submitComposer(e) {
   closeComposer();
   await loadFeed();
   await renderFeed();
+  renderDiscover();
 }

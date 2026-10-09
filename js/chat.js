@@ -1,9 +1,17 @@
-// DMs with an accept gate: a first message is a "request"; the
-// recipient must accept before either side can send real messages.
+// WhatsApp-style chat: tapping "Message" opens a real chat window right
+// away and you can send your first message without the other person
+// accepting anything first. The accept gate only kicks in for continuing
+// the conversation past that opener -- the recipient has to accept before
+// either side can send a second message. Enforced server-side by the
+// messages_insert_gated RLS policy (see supabase/schema.sql notes).
 
-async function startMessageRequest(recipientId, recipientName) {
-  if (recipientId === currentUser.id) return;
+let openThreadRequestId = null;
 
+function initials(name) {
+  return (name || '?').trim().charAt(0).toUpperCase();
+}
+
+async function findOrCreateRequest(recipientId) {
   const { data: existing } = await sb
     .from('message_requests')
     .select('*')
@@ -11,50 +19,170 @@ async function startMessageRequest(recipientId, recipientName) {
       `and(sender_id.eq.${currentUser.id},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${currentUser.id})`
     )
     .maybeSingle();
+  if (existing) return existing;
 
-  if (existing) {
-    if (existing.status === 'accepted') {
-      switchTab('chat');
-      openThread(existing.id, recipientName);
-    } else if (existing.sender_id === currentUser.id) {
-      alert(`You already sent ${recipientName} a message request — waiting for them to accept.`);
-    } else {
-      alert(`${recipientName} already sent you a request — check the Chat tab to accept it.`);
-      switchTab('chat');
-    }
-    return;
-  }
-
-  const { error } = await sb
+  const { data: created, error } = await sb
     .from('message_requests')
-    .insert({ sender_id: currentUser.id, recipient_id: recipientId });
-  if (error) {
-    alert('Could not send request: ' + error.message);
-    return;
-  }
-  alert(`Message request sent to ${recipientName}. You can chat once they accept.`);
-  switchTab('chat');
-  await renderChatTab();
+    .insert({ sender_id: currentUser.id, recipient_id: recipientId })
+    .select()
+    .single();
+  if (error) throw error;
+  return created;
 }
 
-async function loadIncomingRequests() {
-  const { data } = await sb
-    .from('message_requests')
-    .select('*, profiles!message_requests_sender_id_fkey(display_name)')
-    .eq('recipient_id', currentUser.id)
-    .eq('status', 'pending');
-  return data || [];
+async function startMessageRequest(recipientId, recipientName) {
+  if (recipientId === currentUser.id) return;
+  try {
+    const request = await findOrCreateRequest(recipientId);
+    switchTab('chat');
+    await openThread(request.id, recipientName);
+  } catch (err) {
+    alert('Could not open chat: ' + err.message);
+  }
 }
 
-async function loadThreads() {
-  const { data } = await sb
+async function loadConversations() {
+  const { data: requests } = await sb
     .from('message_requests')
     .select(
       '*, sender:profiles!message_requests_sender_id_fkey(display_name), recipient:profiles!message_requests_recipient_id_fkey(display_name)'
     )
-    .eq('status', 'accepted')
     .or(`sender_id.eq.${currentUser.id},recipient_id.eq.${currentUser.id}`);
-  return data || [];
+  if (!requests || !requests.length) return [];
+
+  const ids = requests.map((r) => r.id);
+  const { data: messages } = await sb
+    .from('messages')
+    .select('*')
+    .in('request_id', ids)
+    .order('created_at', { ascending: true });
+
+  return requests
+    .map((r) => {
+      const other = r.sender_id === currentUser.id ? r.recipient : r.sender;
+      const otherId = r.sender_id === currentUser.id ? r.recipient_id : r.sender_id;
+      const thread = (messages || []).filter((m) => m.request_id === r.id);
+      const last = thread[thread.length - 1];
+      return {
+        requestId: r.id,
+        status: r.status,
+        iAmSender: r.sender_id === currentUser.id,
+        otherId,
+        otherName: other?.display_name || 'Someone',
+        lastMessage: last?.body || '',
+        lastAt: last?.created_at || r.created_at,
+        needsMyAction: r.status === 'pending' && r.recipient_id === currentUser.id,
+      };
+    })
+    .sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
+}
+
+async function renderChatTab() {
+  const conversations = await loadConversations();
+  const container = document.getElementById('chat-list');
+
+  if (!conversations.length) {
+    container.innerHTML = '<p class="empty-state">No chats yet. Message someone from a post in the Feed.</p>';
+    return;
+  }
+
+  container.innerHTML = conversations
+    .map(
+      (c) => `
+    <div class="conv-row" data-request-id="${c.requestId}" data-other-name="${escapeHtml(c.otherName)}">
+      <div class="conv-avatar">${initials(c.otherName)}</div>
+      <div class="conv-body">
+        <div class="conv-top">
+          <span class="conv-name">${escapeHtml(c.otherName)}</span>
+          <span class="conv-time">${timeAgo(c.lastAt)}</span>
+        </div>
+        <div class="conv-preview">
+          ${c.needsMyAction ? '<span class="conv-badge">Message request</span>' : ''}
+          <span>${escapeHtml(c.lastMessage).slice(0, 48)}</span>
+        </div>
+      </div>
+    </div>`
+    )
+    .join('');
+
+  container.querySelectorAll('.conv-row').forEach((row) =>
+    row.addEventListener('click', () => openThread(row.dataset.requestId, row.dataset.otherName))
+  );
+}
+
+async function openThread(requestId, otherName) {
+  openThreadRequestId = requestId;
+  const overlay = document.getElementById('thread-overlay');
+  overlay.style.display = 'flex';
+  document.getElementById('thread-title').textContent = otherName;
+  const messagesBox = document.getElementById('thread-messages');
+  messagesBox.innerHTML = '<p class="loading">Loading…</p>';
+
+  const { data: request } = await sb
+    .from('message_requests')
+    .select('*')
+    .eq('id', requestId)
+    .single();
+  const { data: messages } = await sb
+    .from('messages')
+    .select('*')
+    .eq('request_id', requestId)
+    .order('created_at', { ascending: true });
+
+  messagesBox.innerHTML =
+    (messages || [])
+      .map(
+        (m) => `
+    <div class="thread-msg ${m.sender_id === currentUser.id ? 'mine' : 'theirs'}">${escapeHtml(m.body)}</div>`
+      )
+      .join('') || '<p class="empty-state">Say hi 👋</p>';
+  messagesBox.scrollTop = messagesBox.scrollHeight;
+
+  renderThreadActionBar(request, (messages || []).length);
+}
+
+function renderThreadActionBar(request, messageCount) {
+  const bar = document.getElementById('thread-action-bar');
+  const form = document.getElementById('thread-form');
+  const input = document.getElementById('thread-input');
+  const iAmRecipient = request.recipient_id === currentUser.id;
+  const iAmSender = request.sender_id === currentUser.id;
+
+  if (request.status === 'declined') {
+    bar.innerHTML = '<span class="thread-banner">Request declined</span>';
+    bar.style.display = 'block';
+    form.style.display = 'none';
+    return;
+  }
+
+  if (request.status === 'accepted') {
+    bar.style.display = 'none';
+    form.style.display = 'flex';
+    input.disabled = false;
+    return;
+  }
+
+  // pending
+  if (iAmRecipient) {
+    bar.innerHTML = `
+      <span class="thread-banner">Accept to keep chatting with ${escapeHtml(document.getElementById('thread-title').textContent)}</span>
+      <div class="thread-action-buttons">
+        <button id="thread-accept-btn">Accept</button>
+        <button id="thread-decline-btn" class="secondary">Decline</button>
+      </div>`;
+    bar.style.display = 'block';
+    form.style.display = 'none';
+    document.getElementById('thread-accept-btn').addEventListener('click', () => respondToRequest(request.id, true));
+    document.getElementById('thread-decline-btn').addEventListener('click', () => respondToRequest(request.id, false));
+  } else if (iAmSender && messageCount === 0) {
+    bar.style.display = 'none';
+    form.style.display = 'flex';
+    input.disabled = false;
+  } else {
+    bar.innerHTML = '<span class="thread-banner">Waiting for them to accept before you can send more</span>';
+    bar.style.display = 'block';
+    form.style.display = 'none';
+  }
 }
 
 async function respondToRequest(requestId, accept) {
@@ -62,93 +190,34 @@ async function respondToRequest(requestId, accept) {
     .from('message_requests')
     .update({ status: accept ? 'accepted' : 'declined' })
     .eq('id', requestId);
-  if (!error) await renderChatTab();
-}
-
-async function renderChatTab() {
-  const incoming = await loadIncomingRequests();
-  const threads = await loadThreads();
-  const container = document.getElementById('chat-list');
-
-  const incomingHtml = incoming
-    .map(
-      (r) => `
-    <div class="request-row">
-      <span>${escapeHtml(r.profiles?.display_name || 'Someone')} wants to message you</span>
-      <div class="request-actions">
-        <button class="accept-btn" data-id="${r.id}">Accept</button>
-        <button class="decline-btn" data-id="${r.id}">Decline</button>
-      </div>
-    </div>`
-    )
-    .join('');
-
-  const threadsHtml = threads
-    .map((t) => {
-      const other = t.sender_id === currentUser.id ? t.recipient : t.sender;
-      const otherId = t.sender_id === currentUser.id ? t.recipient_id : t.sender_id;
-      return `
-      <div class="thread-row" data-request-id="${t.id}" data-other-name="${escapeHtml(other?.display_name || 'Someone')}">
-        <span>${escapeHtml(other?.display_name || 'Someone')}</span>
-      </div>`;
-    })
-    .join('');
-
-  container.innerHTML = `
-    ${incoming.length ? `<h4 class="chat-section-title">Message requests</h4>${incomingHtml}` : ''}
-    <h4 class="chat-section-title">Chats</h4>
-    ${threadsHtml || '<p class="empty-state">No chats yet.</p>'}
-  `;
-
-  container.querySelectorAll('.accept-btn').forEach((btn) =>
-    btn.addEventListener('click', () => respondToRequest(btn.dataset.id, true))
-  );
-  container.querySelectorAll('.decline-btn').forEach((btn) =>
-    btn.addEventListener('click', () => respondToRequest(btn.dataset.id, false))
-  );
-  container.querySelectorAll('.thread-row').forEach((row) =>
-    row.addEventListener('click', () =>
-      openThread(row.dataset.requestId, row.dataset.otherName)
-    )
-  );
-}
-
-async function openThread(requestId, otherName) {
-  const overlay = document.getElementById('thread-overlay');
-  overlay.style.display = 'flex';
-  document.getElementById('thread-title').textContent = otherName;
-  const messagesBox = document.getElementById('thread-messages');
-  messagesBox.innerHTML = '<p class="loading">Loading…</p>';
-
-  const { data: messages } = await sb
-    .from('messages')
-    .select('*')
-    .eq('request_id', requestId)
-    .order('created_at', { ascending: true });
-
-  messagesBox.innerHTML = (messages || [])
-    .map(
-      (m) => `
-    <div class="thread-msg ${m.sender_id === currentUser.id ? 'mine' : 'theirs'}">${escapeHtml(m.body)}</div>`
-    )
-    .join('') || '<p class="empty-state">Say hi.</p>';
-
-  const form = document.getElementById('thread-form');
-  form.onsubmit = async (e) => {
-    e.preventDefault();
-    const input = document.getElementById('thread-input');
-    const body = input.value.trim();
-    if (!body) return;
-    const { error } = await sb
-      .from('messages')
-      .insert({ request_id: requestId, sender_id: currentUser.id, body });
-    if (!error) {
-      input.value = '';
-      openThread(requestId, otherName);
-    }
-  };
+  if (!error && openThreadRequestId === requestId) {
+    const otherName = document.getElementById('thread-title').textContent;
+    await openThread(requestId, otherName);
+  }
+  await renderChatTab();
 }
 
 function closeThread() {
+  openThreadRequestId = null;
   document.getElementById('thread-overlay').style.display = 'none';
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('thread-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('thread-input');
+    const body = input.value.trim();
+    if (!body || !openThreadRequestId) return;
+    const { error } = await sb
+      .from('messages')
+      .insert({ request_id: openThreadRequestId, sender_id: currentUser.id, body });
+    if (error) {
+      alert('Could not send: ' + error.message);
+      return;
+    }
+    input.value = '';
+    const otherName = document.getElementById('thread-title').textContent;
+    await openThread(openThreadRequestId, otherName);
+    await renderChatTab();
+  });
+});

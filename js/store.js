@@ -74,3 +74,80 @@ function postMatchesFilters(post, filters) {
   }
   return true;
 }
+
+// Saved places (bookmarks) and itinerary (day-by-day trip plan) are
+// per-device preferences, same as filters -- localStorage, not Supabase.
+
+function getSavedPlaces() {
+  try {
+    return JSON.parse(localStorage.getItem('hl_saved') || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function isPlaceSaved(placeId) {
+  return getSavedPlaces().includes(placeId);
+}
+
+function toggleSavedPlace(placeId) {
+  const saved = getSavedPlaces();
+  const next = saved.includes(placeId)
+    ? saved.filter((id) => id !== placeId)
+    : [...saved, placeId];
+  localStorage.setItem('hl_saved', JSON.stringify(next));
+  return next.includes(placeId);
+}
+
+const DEFAULT_ITINERARY = { nextDayNum: 1, days: [], unscheduled: [] };
+
+function getItinerary() {
+  try {
+    const raw = localStorage.getItem('hl_itinerary');
+    if (!raw) return { ...DEFAULT_ITINERARY, days: [], unscheduled: [] };
+    return JSON.parse(raw);
+  } catch {
+    return { ...DEFAULT_ITINERARY, days: [], unscheduled: [] };
+  }
+}
+
+function saveItinerary(it) {
+  localStorage.setItem('hl_itinerary', JSON.stringify(it));
+}
+
+function addToItinerary(item) {
+  const it = getItinerary();
+  it.unscheduled.push({ ...item, addedAt: Date.now() });
+  saveItinerary(it);
+  return it;
+}
+
+function addItineraryDay() {
+  const it = getItinerary();
+  const dayNum = it.nextDayNum;
+  it.days.push({ id: dayNum, items: [] });
+  it.nextDayNum = dayNum + 1;
+  saveItinerary(it);
+  return it;
+}
+
+function moveUnscheduledToDay(itemIndex, dayId) {
+  const it = getItinerary();
+  const [item] = it.unscheduled.splice(itemIndex, 1);
+  const day = it.days.find((d) => d.id === dayId);
+  if (day && item) day.items.push(item);
+  saveItinerary(it);
+  return it;
+}
+
+function removeItineraryItem(bucket, dayId, itemIndex) {
+  const it = getItinerary();
+  if (bucket === 'unscheduled') {
+    it.unscheduled.splice(itemIndex, 1);
+  } else {
+    const day = it.days.find((d) => d.id === dayId);
+    if (day) day.items.splice(itemIndex, 1);
+  }
+  saveItinerary(it);
+  return it;
+}
