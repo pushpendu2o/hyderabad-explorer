@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Hyderabad Locals</title>
+  <link rel="stylesheet" href="css/style.css?v=1" />
+</head>
+<body>
+  <div id="app-loading">Loading…</div>
+
+  <div id="app-shell" class="phone-shell" style="display:none">
+    <header class="app-topbar">
+      <div class="app-topbar-title-row">
+        <h1>Hyderabad Locals</h1>
+      </div>
+    </header>
+
+    <main class="tab-content">
+      <section id="tab-feed" class="tab-pane">
+        <div class="feed-toolbar">
+          <button id="open-filter-btn" class="header-icon-btn">Filters</button>
+          <button id="open-composer-btn" class="primary-btn">+ Post</button>
+        </div>
+        <div id="feed-list"></div>
+      </section>
+
+      <section id="tab-discover" class="tab-pane" style="display:none">
+        <div id="discover-list"></div>
+      </section>
+
+      <section id="tab-chat" class="tab-pane" style="display:none">
+        <div id="chat-list"></div>
+      </section>
+
+      <section id="tab-profile" class="tab-pane" style="display:none">
+        <div class="profile-box">
+          <h2 id="profile-name"></h2>
+          <p id="profile-location"></p>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-tabs">
+      <button class="tab-btn active" data-tab="feed">Feed</button>
+      <button class="tab-btn" data-tab="discover">Discover</button>
+      <button class="tab-btn" data-tab="chat">Chat</button>
+      <button class="tab-btn" data-tab="profile">Profile</button>
+    </nav>
+  </div>
+
+  <!-- First-visit display name prompt -->
+  <div id="name-prompt-overlay" class="overlay" style="display:none">
+    <div class="overlay-card">
+      <h3>Pick a display name</h3>
+      <p>No email needed — just a name other locals will see on your posts.</p>
+      <input id="name-prompt-input" type="text" maxlength="30" placeholder="e.g. Asha K." />
+      <button id="name-prompt-submit" class="primary-btn">Continue</button>
+    </div>
+  </div>
+
+  <!-- New post composer -->
+  <div id="composer-overlay" class="overlay" style="display:none">
+    <div class="overlay-card">
+      <div class="overlay-card-header">
+        <h3>New post</h3>
+        <button id="composer-close-btn" class="close-btn">×</button>
+      </div>
+      <form id="composer-form">
+        <label>Place
+          <select name="place_id" required>
+            <option value="">Select a place</option>
+            <option value="golconda">Golconda Fort</option>
+            <option value="charminar">Charminar</option>
+            <option value="medak">Medak Fort</option>
+            <option value="rachakonda">Rachakonda Fort</option>
+            <option value="hussainsagar">Hussain Sagar</option>
+          </select>
+        </label>
+        <label>Type
+          <select name="post_type" required>
+            <option value="">Select a type</option>
+            <option value="question">Question</option>
+            <option value="trip_report">Trip report</option>
+            <option value="like">What I liked</option>
+            <option value="unexpected">Unexpected</option>
+            <option value="unsafe">Heads up / unsafe</option>
+          </select>
+        </label>
+        <label>Title
+          <input type="text" name="title" maxlength="120" required />
+        </label>
+        <label>Details
+          <textarea name="body" maxlength="1000" rows="4" required></textarea>
+        </label>
+        <button type="submit" class="primary-btn">Post</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Filter sheet -->
+  <div id="filter-sheet" class="overlay" style="display:none">
+    <div class="overlay-card">
+      <div class="overlay-card-header">
+        <h3>Filters</h3>
+        <button id="filter-close-btn" class="close-btn">×</button>
+      </div>
+      <p class="filter-label">Place</p>
+      <div class="chip-row">
+        <span class="filter-place-chip" data-place="golconda">Golconda</span>
+        <span class="filter-place-chip" data-place="charminar">Charminar</span>
+        <span class="filter-place-chip" data-place="medak">Medak</span>
+        <span class="filter-place-chip" data-place="rachakonda">Rachakonda</span>
+        <span class="filter-place-chip" data-place="hussainsagar">Hussain Sagar</span>
+      </div>
+      <p class="filter-label">Post type</p>
+      <div class="chip-row">
+        <span class="filter-type-chip" data-type="question">Question</span>
+        <span class="filter-type-chip" data-type="trip_report">Trip report</span>
+        <span class="filter-type-chip" data-type="like">Liked</span>
+        <span class="filter-type-chip" data-type="unexpected">Unexpected</span>
+        <span class="filter-type-chip" data-type="unsafe">Unsafe</span>
+      </div>
+      <p class="filter-label">Max distance: <span id="filter-distance-label">50 km</span></p>
+      <input id="filter-distance" type="range" min="1" max="100" value="50" />
+      <button id="filter-apply-btn" class="primary-btn">Apply</button>
+    </div>
+  </div>
+
+  <!-- Message thread -->
+  <div id="thread-overlay" class="overlay" style="display:none">
+    <div class="overlay-card">
+      <div class="overlay-card-header">
+        <h3 id="thread-title"></h3>
+        <button id="thread-close-btn" class="close-btn">×</button>
+      </div>
+      <div id="thread-messages" class="thread-messages"></div>
+      <form id="thread-form" class="thread-form">
+        <input id="thread-input" type="text" placeholder="Message…" maxlength="500" required />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js?v=1"></script>
+  <script src="js/supabaseClient.js?v=1"></script>
+  <script src="js/auth.js?v=1"></script>
+  <script src="js/store.js?v=1"></script>
+  <script src="js/feed.js?v=1"></script>
+  <script src="js/discover.js?v=1"></script>
+  <script src="js/chat.js?v=1"></script>
+  <script src="js/main.js?v=1"></script>
+</body>
+</html>
