@@ -1,3 +1,5 @@
+let searchQuery = '';
+
 async function switchTab(tab) {
   document.querySelectorAll('.tab-pane').forEach((el) => (el.style.display = 'none'));
   document.querySelectorAll('.tab-btn').forEach((el) => el.classList.remove('active'));
@@ -9,8 +11,14 @@ async function switchTab(tab) {
 }
 
 async function renderProfileTab() {
-  await ensureProfileForInteraction();
-  document.getElementById('profile-name').textContent = currentProfile.display_name;
+  const profile = await ensureProfileForInteraction();
+  if (!profile) {
+    document.getElementById('profile-name').textContent = '(not set up yet)';
+    document.getElementById('profile-location').textContent = 'Tap this tab again to set your name';
+    renderProfileExtras();
+    return;
+  }
+  document.getElementById('profile-name').textContent = profile.display_name;
   document.getElementById('profile-location').textContent =
     myLat !== null ? 'Location shared' : 'Location not shared';
   renderProfileExtras();
@@ -18,14 +26,8 @@ async function renderProfileTab() {
 
 function openFilterSheet() {
   const filters = getFilters();
-  // Empty placeIds/postTypes means "no filter applied yet" -- show that
-  // visually as every chip selected, since that's the equivalent state.
-  document.querySelectorAll('.filter-place-chip').forEach((chip) => {
-    chip.classList.toggle(
-      'selected',
-      filters.placeIds.length === 0 || filters.placeIds.includes(chip.dataset.place)
-    );
-  });
+  // Empty postTypes means "no filter applied yet" -- show that visually
+  // as every chip selected, since that's the equivalent state.
   document.querySelectorAll('.filter-type-chip').forEach((chip) => {
     chip.classList.toggle(
       'selected',
@@ -38,12 +40,6 @@ function openFilterSheet() {
 }
 
 async function applyFilters() {
-  const allPlaceChips = [...document.querySelectorAll('.filter-place-chip')];
-  const selectedPlaceChips = allPlaceChips.filter((el) => el.classList.contains('selected'));
-  const placeIds = selectedPlaceChips.length === allPlaceChips.length
-    ? []
-    : selectedPlaceChips.map((el) => el.dataset.place);
-
   const allTypeChips = [...document.querySelectorAll('.filter-type-chip')];
   const selectedTypeChips = allTypeChips.filter((el) => el.classList.contains('selected'));
   const postTypes = selectedTypeChips.length === allTypeChips.length
@@ -51,7 +47,7 @@ async function applyFilters() {
     : selectedTypeChips.map((el) => el.dataset.type);
 
   const maxDistanceKm = Number(document.getElementById('filter-distance').value);
-  saveFilters({ placeIds, postTypes, maxDistanceKm });
+  saveFilters({ ...getFilters(), postTypes, maxDistanceKm });
   document.getElementById('filter-sheet').style.display = 'none';
   await renderFeed();
 }
@@ -82,11 +78,17 @@ async function bootstrap() {
   document.getElementById('filter-distance').addEventListener('input', (e) => {
     document.getElementById('filter-distance-label').textContent = `${e.target.value} km`;
   });
-  document.querySelectorAll('.filter-place-chip, .filter-type-chip').forEach((chip) =>
+  document.querySelectorAll('.filter-type-chip').forEach((chip) =>
     chip.addEventListener('click', () => chip.classList.toggle('selected'))
   );
   document.getElementById('thread-close-btn').addEventListener('click', closeThread);
   document.getElementById('place-detail-close-btn').addEventListener('click', closePlaceDetail);
+  document.getElementById('article-page-close-btn').addEventListener('click', closeArticle);
+  document.getElementById('topbar-search-input').addEventListener('input', (e) => {
+    searchQuery = e.target.value.trim().toLowerCase();
+    renderFeed();
+    renderDiscover();
+  });
 }
 
 bootstrap().catch((err) => {

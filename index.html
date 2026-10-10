@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Hyderabad Locals</title>
-  <link rel="stylesheet" href="css/style.css?v=12" />
+  <link rel="stylesheet" href="css/style.css?v=15" />
 </head>
 <body>
   <div id="app-loading">Loading…</div>
@@ -13,6 +13,7 @@
     <header class="app-topbar">
       <div class="app-topbar-title-row">
         <h1>Hyderabad<span class="brand-accent">Locals</span></h1>
+        <input id="topbar-search-input" type="text" class="topbar-search-input" placeholder="Search" />
       </div>
     </header>
 
@@ -109,14 +110,6 @@
   <div id="filter-sheet" class="overlay" style="display:none">
     <div class="overlay-card">
       <h3>Filters</h3>
-      <p class="filter-label">Place</p>
-      <div class="chip-row">
-        <span class="filter-place-chip" data-place="golconda">Golconda</span>
-        <span class="filter-place-chip" data-place="charminar">Charminar</span>
-        <span class="filter-place-chip" data-place="medak">Medak</span>
-        <span class="filter-place-chip" data-place="rachakonda">Rachakonda</span>
-        <span class="filter-place-chip" data-place="hussainsagar">Hussain Sagar</span>
-      </div>
       <p class="filter-label">Post type</p>
       <div class="chip-row">
         <span class="filter-type-chip" data-type="question">Question</span>
@@ -174,6 +167,31 @@
     </div>
   </div>
 
+  <!-- Article reader (Feed stories) -->
+  <div id="article-page" class="full-page article-page" style="display:none">
+    <header class="full-page-header">
+      <button id="article-page-close-btn" class="back-btn" title="Back">←</button>
+      <h3 id="article-page-title"></h3>
+      <span class="header-spacer"></span>
+    </header>
+    <div class="full-page-body">
+      <div id="article-page-video" class="article-page-video"></div>
+      <p id="article-page-byline" class="article-page-byline"></p>
+      <div id="article-page-sections" class="article-page-sections"></div>
+
+      <div class="article-callout article-callout-best">
+        <strong>Best part</strong>
+        <p id="article-page-best"></p>
+      </div>
+      <div class="article-callout article-callout-hard">
+        <strong>Hardest part</strong>
+        <p id="article-page-hard"></p>
+      </div>
+
+      <a id="article-page-source-link" class="article-source-link" href="#" target="_blank" rel="noopener">Watch the full video on YouTube →</a>
+    </div>
+  </div>
+
   <!-- Message thread -->
   <div id="thread-overlay" class="overlay" style="display:none">
     <div class="overlay-card">
@@ -191,14 +209,15 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=12"></script>
-  <script src="js/supabaseClient.js?v=12"></script>
-  <script src="js/auth.js?v=12"></script>
-  <script src="js/store.js?v=12"></script>
-  <script src="js/feed.js?v=12"></script>
-  <script src="js/discover.js?v=12"></script>
-  <script src="js/chat.js?v=12"></script>
-  <script src="js/profile.js?v=12"></script>
-  <script src="js/main.js?v=12"></script>
+  <script src="js/config.js?v=15"></script>
+  <script src="js/supabaseClient.js?v=15"></script>
+  <script src="js/auth.js?v=15"></script>
+  <script src="js/store.js?v=15"></script>
+  <script src="js/feed.js?v=15"></script>
+  <script src="js/articles.js?v=15"></script>
+  <script src="js/discover.js?v=15"></script>
+  <script src="js/chat.js?v=15"></script>
+  <script src="js/profile.js?v=15"></script>
+  <script src="js/main.js?v=15"></script>
 </body>
 </html>

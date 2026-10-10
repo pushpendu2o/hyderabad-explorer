@@ -86,12 +86,23 @@ const STATIC_PLACE_INFO = {
 
 function computeTrending(posts) {
   const counts = {};
+  const latest = {};
   for (const p of posts) {
     counts[p.place_id] = (counts[p.place_id] || 0) + 1;
+    if (!latest[p.place_id] || new Date(p.created_at) > new Date(latest[p.place_id])) {
+      latest[p.place_id] = p.created_at;
+    }
   }
   return PLACES
-    .map((place) => ({ place, count: counts[place.id] || 0 }))
+    .map((place) => ({ place, count: counts[place.id] || 0, latestAt: latest[place.id] || null }))
     .sort((a, b) => b.count - a.count);
+}
+
+function daysAgoLabel(iso) {
+  if (!iso) return 'No posts yet';
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days <= 0) return 'Latest post today';
+  return `Latest post ${days}d ago`;
 }
 
 async function refreshDiscover() {
@@ -100,11 +111,13 @@ async function refreshDiscover() {
 }
 
 function renderDiscover() {
-  const trending = computeTrending(feedPosts);
+  const trending = computeTrending(feedPosts).filter(
+    ({ place }) => !searchQuery || place.name.toLowerCase().includes(searchQuery)
+  );
   const container = document.getElementById('discover-list');
 
   container.innerHTML = trending
-    .map(({ place, count }) => {
+    .map(({ place, count, latestAt }) => {
       const info = STATIC_PLACE_INFO[place.id];
       return `
       <div class="discover-card" data-place-id="${place.id}">
@@ -115,6 +128,8 @@ function renderDiscover() {
             ${count > 0 ? `<span class="trending-badge">${count} post${count === 1 ? '' : 's'}</span>` : '<span class="trending-badge quiet">Quiet for now</span>'}
           </div>
           <p class="discover-about">${info.about.slice(0, 80)}…</p>
+          <p class="discover-tip">💡 ${info.tips[0]}</p>
+          <p class="discover-days-ago">${daysAgoLabel(latestAt)}</p>
         </div>
       </div>`;
     })

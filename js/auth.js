@@ -31,10 +31,15 @@ async function loadProfileIfExists() {
 
 // Call this at the start of any action that needs an author (posting,
 // commenting, messaging, viewing Profile). No-ops if already set up.
+// Returns the profile, or null if the user dismissed the name prompt
+// without entering one -- callers must check for null and abort whatever
+// they were about to do (post/comment/message), not treat it as success.
 async function ensureProfileForInteraction() {
   if (currentProfile) return currentProfile;
 
   const name = await promptDisplayName();
+  if (!name) return null;
+
   const { data: created, error } = await sb
     .from('profiles')
     .insert({ id: currentUser.id, display_name: name })
@@ -58,17 +63,30 @@ function promptDisplayName() {
     input.value = '';
     input.focus();
 
+    function cleanup() {
+      overlay.style.display = 'none';
+      btn.removeEventListener('click', submit);
+      overlay.removeEventListener('click', onBackdropClick);
+      input.removeEventListener('keydown', onKeydown);
+    }
     function submit() {
       const value = input.value.trim();
       if (!value) return;
-      overlay.style.display = 'none';
-      btn.removeEventListener('click', submit);
+      cleanup();
       resolve(value);
     }
-    btn.addEventListener('click', submit);
-    input.addEventListener('keydown', (e) => {
+    function onBackdropClick(e) {
+      if (e.target === overlay) {
+        cleanup();
+        resolve(null);
+      }
+    }
+    function onKeydown(e) {
       if (e.key === 'Enter') submit();
-    });
+    }
+    btn.addEventListener('click', submit);
+    overlay.addEventListener('click', onBackdropClick);
+    input.addEventListener('keydown', onKeydown);
   });
 }
 

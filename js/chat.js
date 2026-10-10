@@ -33,7 +33,7 @@ async function findOrCreateRequest(recipientId) {
 async function startMessageRequest(recipientId, recipientName) {
   if (recipientId === currentUser.id) return;
   try {
-    await ensureProfileForInteraction();
+    if (!(await ensureProfileForInteraction())) return;
     const request = await findOrCreateRequest(recipientId);
     switchTab('chat');
     await openThread(request.id, recipientName);
@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('thread-input');
     const body = input.value.trim();
     if (!body || !openThreadRequestId) return;
-    await ensureProfileForInteraction();
+    if (!(await ensureProfileForInteraction())) return;
     const { error } = await sb
       .from('messages')
       .insert({ request_id: openThreadRequestId, sender_id: currentUser.id, body });

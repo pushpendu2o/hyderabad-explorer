@@ -97,16 +97,31 @@ function renderFilterBanner(filters) {
   });
 }
 
+function postMatchesSearch(post) {
+  if (!searchQuery) return true;
+  return (
+    post.title.toLowerCase().includes(searchQuery) ||
+    post.body.toLowerCase().includes(searchQuery)
+  );
+}
+
 async function renderFeed() {
   const filters = getFilters();
   renderFilterBanner(filters);
   const container = document.getElementById('feed-list');
-  const visible = feedPosts.filter((p) => postMatchesFilters(p, filters));
+  const visible = feedPosts.filter((p) => postMatchesFilters(p, filters) && postMatchesSearch(p));
   if (!visible.length) {
     container.innerHTML = '<p class="empty-state">No posts match your filters yet.</p>';
     return;
   }
-  container.innerHTML = visible.map(postCardHtml).join('');
+  const items = searchQuery ? visible.map((p) => ({ kind: 'post', data: p })) : interleaveArticlesIntoPosts(visible);
+  container.innerHTML = items
+    .map((item) => (item.kind === 'article' ? articleCardHtml(item.data) : postCardHtml(item.data)))
+    .join('');
+
+  container.querySelectorAll('.article-card').forEach((card) => {
+    card.addEventListener('click', () => openArticle(card.dataset.articleId));
+  });
 
   container.querySelectorAll('.feed-comment-btn').forEach((btn) => {
     btn.addEventListener('click', () => toggleComments(btn.dataset.postId));
@@ -180,7 +195,7 @@ async function renderCommentsBox(postId) {
     const input = e.target.querySelector('input');
     const body = input.value.trim();
     if (!body) return;
-    await ensureProfileForInteraction();
+    if (!(await ensureProfileForInteraction())) return;
     const { error } = await sb
       .from('comments')
       .insert({ post_id: postId, author_id: currentUser.id, body });
@@ -192,7 +207,7 @@ async function renderCommentsBox(postId) {
 }
 
 async function openComposer() {
-  await ensureProfileForInteraction();
+  if (!(await ensureProfileForInteraction())) return;
   document.getElementById('composer-overlay').style.display = 'flex';
 }
 
@@ -209,8 +224,7 @@ async function submitComposer(e) {
   const title = form.title.value.trim();
   const body = form.body.value.trim();
   if (!place_id || !post_type || !title || !body) return;
-
-  await ensureProfileForInteraction();
+  if (!(await ensureProfileForInteraction())) return;
 
   const { error } = await sb.from('posts').insert({
     author_id: currentUser.id,
