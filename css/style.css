@@ -234,6 +234,6 @@ html, body { margin: 0; overflow: hidden; height: 100%; font-family: -apple-syst
   border-radius: 10px; padding: 10px 12px; margin-top: 14px; font-size: 13px;
 }
 .article-callout strong { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-.article-callout-best { background: #e3f6e7; color: #2a7a45; }
-.article-callout-hard { background: #fde2e2; color: #a33; }
+.article-callout-interesting { background: #e3f6e7; color: #2a7a45; }
+.article-callout-watchout { background: #fde2e2; color: #a33; }
 .article-source-link { display: block; text-align: center; margin-top: 18px; font-size: 13px; color: #d1495b; text-decoration: none; }

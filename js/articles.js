@@ -8,7 +8,9 @@
 // then each following article goes after every 2 posts thereafter.
 const ARTICLE_INSERT_SCHEDULE = [1, 2, 2];
 
-const ARTICLES = [
+// Not shown in the Feed right now (swapped out for Hyderabad-specific
+// stories), but kept here in case they're wanted again later.
+const ARCHIVED_ARTICLES = [
   {
     id: 'annapurna-base-camp-journey',
     title: "Nepal's Most Beautiful Trek: A Journey to Annapurna Base Camp",
@@ -87,6 +89,89 @@ const ARTICLES = [
   },
 ];
 
+const ARTICLES = [
+  {
+    id: 'charminar-ramadan-food-walk',
+    title: 'A Ramadan Food Walk Through Charminar: Iftar to Sehri',
+    creator: 'Kunal Vijayakar (Khaane Mein Kya Hai)',
+    youtubeId: 'dEF3BcK4mw8',
+    youtubeUrl: 'https://www.youtube.com/watch?v=dEF3BcK4mw8',
+    teaser: 'From dates at Iftar to Khatti Khichadi at Sehri — a full night of eating around Charminar during Ramadan: Haleem, Pathar Ka Gosht, Turkish Marag, and more.',
+    sections: [
+      {
+        heading: 'Breaking the fast: dates and Haleem',
+        body: 'The walk starts at Charminar right as the Ramadan crowds gather for Iftar. It opens the traditional way — dates first, to break the fast — before moving straight into Haleem, the slow-cooked wheat-and-meat dish Hyderabad is famous for during Ramadan.',
+      },
+      {
+        heading: 'Pathar Ka Gosht — the longest stop',
+        body: 'Pathar Ka Gosht, mutton grilled directly on a hot stone slab, gets the most screen time of any dish in the episode — it\'s clearly the centerpiece of the walk.',
+      },
+      {
+        heading: 'Falooda, Turkish Marag, and seekh kebab',
+        body: 'From there it\'s Mashallah Falooda, then a stop for Turkish Marag (a Yemeni-style soup that\'s become part of Hyderabad\'s Ramadan food scene) alongside seekh kebab and Turkish-style chai — the single longest combined segment in the video.',
+      },
+      {
+        heading: 'Phirni, then on to Sehri at Hotel Shadab',
+        body: 'Phirni (a rice pudding) closes out the Iftar half. The walk then shifts to Sehri — the pre-dawn meal before the next day\'s fast — at Hotel Shadab, a named, well-known Old City institution, with Khatti Khichadi, Keema, and Bhaaji Gurda.',
+      },
+    ],
+    interestingPart: 'Pathar Ka Gosht gets by far the most screen time of any single dish — mutton grilled straight on a hot stone slab, and the clear centerpiece of the whole walk.',
+    watchOutPart: 'It\'s a serious six-plus-stop binge — dates, Haleem, Pathar Ka Gosht, Falooda, Turkish Marag, seekh kebab, Phirni, and then a full second round of Sehri dishes. Pace yourself.',
+  },
+  {
+    id: 'ramoji-film-city-tour',
+    title: "Inside the World's Biggest Film City",
+    creator: 'KK Create (Kavya Karnatac)',
+    youtubeId: 'rFrkgnRqdZs',
+    youtubeUrl: 'https://www.youtube.com/watch?v=rFrkgnRqdZs',
+    teaser: "500+ sets, 60+ gardens, and a crew of 6,000 — a tour through why Ramoji Film City is the world's biggest film studio, and why 200+ movies get shot there every year.",
+    sections: [
+      {
+        heading: 'The scale of it',
+        body: 'The video opens with the scale of Indian cinema itself — the world\'s 5th largest film industry, employing nearly 2 million people and releasing more than 2,500 films a year across 20+ languages. Ramoji Film City is framed as the physical engine behind a lot of that: over 1.5 million visitors a year, more than 200 films shot there annually, a facility about 26 times the size of the world\'s biggest cricket stadium, a crew of 6,000+, and room to shoot up to 20 international or 40 domestic film productions at the same time.',
+      },
+      {
+        heading: '500+ sets and special streets',
+        body: 'The tour covers the sheer number of standing sets — over 500 of them — plus specially built streets designed to double for different cities and countries without ever leaving the property.',
+      },
+      {
+        heading: 'The people behind it: set designers and construction',
+        body: 'A chunk of the video goes to the talent most visitors never think about — the set designers, and the construction and props facility big enough to build whatever a production needs from scratch, on site.',
+      },
+      {
+        heading: 'More than 60 gardens, and empty floors built for anything',
+        body: 'Ramoji Film City has more than 60 gardens built into it, alongside huge empty soundstage floors kept intentionally bare so they can become whatever the next production needs. There\'s also on-site housing for an entire visiting film crew — so a full production can live there, not just shoot there.',
+      },
+    ],
+    interestingPart: 'The video builds toward one final "biggest project" tease as its last specialty, right before closing out with stats on the Indian film industry as a whole.',
+    watchOutPart: 'It\'s shot in genuinely extreme heat — the creator notes filming at 50°C, so if you\'re visiting, plan around the sun and carry water.',
+  },
+  {
+    id: 'golconda-fort-roadtrippin',
+    title: "Golconda Fort: Natural Air Conditioning and the Kohinoor's Origin",
+    creator: 'Rocky Singh & Mayur Sharma (#RoadTrippinwithRnM, History TV18)',
+    youtubeId: 'b9Zr1TqfkmA',
+    youtubeUrl: 'https://www.youtube.com/watch?v=b9Zr1TqfkmA',
+    teaser: "Rocky and Mayur visit Golconda Fort — from its ingenious passive cooling system to its connection with the origin of the Kohinoor diamond.",
+    sections: [
+      {
+        heading: 'An engineering trick built for the heat',
+        body: 'Rocky and Mayur\'s stop at Golconda Fort centers on a standout piece of 16th-century design: a passive cooling-and-heating system built into the king\'s viewing pavilion at the top of the fort, which the show nicknames "natural air conditioning" — centuries-old engineering solving a very modern problem.',
+      },
+      {
+        heading: 'Where the Kohinoor came from',
+        body: 'The episode also traces the fort\'s connection to one of the world\'s most famous diamonds — the Kohinoor, discovered during the reign of Sultan Abdullah Qutub Shah, from an era when Golconda\'s markets briefly made it the center of the world\'s diamond trade.',
+      },
+      {
+        heading: 'The clap that travels a kilometre',
+        body: 'Golconda is also known for its acoustic design — a clap at the Fateh Darwaza entrance can be heard all the way up at the Bala Hissar pavilion, nearly a kilometre away, a centuries-old echo trick built right into the fort\'s gates.',
+      },
+    ],
+    interestingPart: 'The "natural air conditioning" engineering feature is the episode\'s standout highlight — a genuinely clever piece of centuries-old design.',
+    watchOutPart: 'The climb up to Bala Hissar is steep with little shade along the way, so go prepared for sun and a real workout if you\'re making it to the top.',
+  },
+];
+
 function youtubeThumb(youtubeId) {
   return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
 }
@@ -144,8 +229,8 @@ function openArticle(articleId) {
     .map((s) => `<h4>${escapeHtml(s.heading)}</h4><p>${escapeHtml(s.body)}</p>`)
     .join('');
 
-  document.getElementById('article-page-best').textContent = article.bestPart;
-  document.getElementById('article-page-hard').textContent = article.hardPart;
+  document.getElementById('article-page-interesting').textContent = article.interestingPart;
+  document.getElementById('article-page-watchout').textContent = article.watchOutPart;
 
   document.getElementById('article-page-source-link').href = article.youtubeUrl;
 
