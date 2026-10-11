@@ -2,20 +2,30 @@
 // unsafe) tagged to one of the 5 places, each with a "gossip" comment
 // thread. Everything here is live Supabase data, not static content.
 
+const FEED_PAGE_SIZE = 20;
+
 let feedPosts = [];
+let feedHasMore = true;
 let expandedPostId = null;
 
-async function loadFeed() {
+// reset=true (the default) reloads page 1, replacing feedPosts -- used on
+// first load and after posting. reset=false appends the next page, used
+// by the "Load more" button so filters/search keep working on whatever's
+// been loaded so far.
+async function loadFeed(reset = true) {
+  const offset = reset ? 0 : feedPosts.length;
   const { data, error } = await sb
     .from('posts')
     .select('*, profiles!posts_author_id_fkey(display_name), comments(count)')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(offset, offset + FEED_PAGE_SIZE - 1);
   if (error) {
     console.error(error);
-    feedPosts = [];
+    if (reset) feedPosts = [];
     return;
   }
-  feedPosts = data;
+  feedPosts = reset ? data : [...feedPosts, ...data];
+  feedHasMore = data.length === FEED_PAGE_SIZE;
 }
 
 async function loadCommentsForPost(postId) {
@@ -123,6 +133,18 @@ async function renderFeed() {
     .map((item) => (item.kind === 'article' ? articleCardHtml(item.data) : postCardHtml(item.data)))
     .join('');
 
+  if (feedHasMore && !searchQuery) {
+    container.insertAdjacentHTML(
+      'beforeend',
+      '<button id="feed-load-more-btn" class="header-icon-btn full-width-btn">Load more</button>'
+    );
+    document.getElementById('feed-load-more-btn').addEventListener('click', async (e) => {
+      e.target.textContent = 'Loading…';
+      await loadFeed(false);
+      await renderFeed();
+    });
+  }
+
   container.querySelectorAll('.article-card').forEach((card) => {
     card.addEventListener('click', () => openArticle(card.dataset.articleId));
   });
@@ -198,6 +220,7 @@ async function renderCommentsBox(postId) {
       .from('comments')
       .insert({ post_id: postId, author_id: currentUser.id, body });
     if (!error) {
+      posthog.capture('comment_created', { post_id: postId });
       input.value = '';
       await renderCommentsBox(postId);
     }
@@ -235,6 +258,7 @@ async function submitComposer(e) {
     alert('Could not post: ' + error.message);
     return;
   }
+  posthog.capture('post_created', { place_id, post_type });
   closeComposer();
   await loadFeed();
   await renderFeed();

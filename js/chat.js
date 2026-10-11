@@ -35,6 +35,7 @@ async function startMessageRequest(recipientId, recipientName) {
   try {
     if (!(await ensureProfileForInteraction())) return;
     const request = await findOrCreateRequest(recipientId);
+    posthog.capture('message_request_started', { recipient_id: recipientId });
     switchTab('chat');
     await openThread(request.id, recipientName);
   } catch (err) {

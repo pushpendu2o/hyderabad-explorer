@@ -5,6 +5,7 @@ async function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((el) => el.classList.remove('active'));
   document.getElementById(`tab-${tab}`).style.display = 'block';
   document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+  posthog.capture('tab_viewed', { tab });
   if (tab === 'chat') renderChatTab();
   if (tab === 'discover') refreshDiscover();
   if (tab === 'profile') await renderProfileTab();
@@ -54,11 +55,12 @@ async function applyFilters() {
 
 async function bootstrap() {
   await ensureSession();
+  posthog.identify(currentUser.id);
 
   const loc = await requestUserLocation();
   if (loc) await updateMyLocation(loc.lat, loc.lng);
 
-  await loadFeed();
+  await Promise.all([loadFeed(), loadPlaceInfo(), loadArticles()]);
   await renderFeed();
   renderDiscover();
 
