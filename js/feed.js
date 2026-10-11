@@ -43,11 +43,15 @@ function timeAgo(iso) {
 const ICON_COMMENT = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>';
 const ICON_MESSAGE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
 
+const FEED_BODY_CLAMP_THRESHOLD = 280;
+
 function postCardHtml(post) {
   const place = placeById(post.place_id);
   const authorName = post.profiles?.display_name || 'Someone';
   const isMine = post.author_id === currentUser?.id;
   const commentCount = post.comments?.[0]?.count || 0;
+  const bodyHtml = escapeHtml(post.body).replace(/\n/g, '<br>');
+  const isLong = post.body.length > FEED_BODY_CLAMP_THRESHOLD;
   return `
     <div class="feed-card" data-post-id="${post.id}">
       <div class="feed-card-top">
@@ -55,8 +59,8 @@ function postCardHtml(post) {
         <span class="feed-type-tag feed-type-${post.post_type}">${POST_TYPE_LABELS[post.post_type]}</span>
       </div>
       <h3 class="feed-card-title">${escapeHtml(post.title)}</h3>
-      <p class="feed-card-body clamped" data-post-id="${post.id}">${escapeHtml(post.body)}</p>
-      <button class="show-more-btn" data-post-id="${post.id}" style="display:none">Show more</button>
+      <p class="feed-card-body${isLong ? ' clamped' : ''}" data-post-id="${post.id}">${bodyHtml}</p>
+      ${isLong ? `<button class="show-more-btn" data-post-id="${post.id}">Show more</button>` : ''}
       <div class="feed-card-meta">
         <span>${escapeHtml(authorName)} · ${timeAgo(post.created_at)}</span>
         <div class="feed-card-actions">
@@ -132,17 +136,11 @@ async function renderFeed() {
     );
   });
 
-  container.querySelectorAll('.clamped').forEach((el) => {
-    if (el.scrollHeight > el.clientHeight + 2) {
-      const btn = container.querySelector(`.show-more-btn[data-post-id="${el.dataset.postId}"]`);
-      if (btn) btn.style.display = 'block';
-    }
-  });
   container.querySelectorAll('.show-more-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const body = container.querySelector(`.clamped[data-post-id="${btn.dataset.postId}"]`);
-      body.classList.remove('clamped');
-      btn.style.display = 'none';
+      const body = container.querySelector(`.feed-card-body[data-post-id="${btn.dataset.postId}"]`);
+      const collapsed = body.classList.toggle('clamped');
+      btn.textContent = collapsed ? 'Show more' : 'Show less';
     });
   });
 }
